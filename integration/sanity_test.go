@@ -30,6 +30,25 @@ const (
 	stringExistingInHelp = "--version, -v  print the version"
 )
 
+func assertErrNil(t *testing.T, err error) {
+	if err != nil {
+		t.Helper()
+		t.Fatal(err)
+	}
+}
+
+func cleanup(t *testing.T, m Instance) {
+	if t.Failed() {
+		t.Logf("\nName: %s\nRan command:\nenv %s %s\nStdout:\n%s\nStderr:\n%s",
+			m.Name, m.env, m.command, m.Stdout.String(), m.Stderr.String())
+		if m.DeployOutput != "" {
+			t.Logf("Deploy output:\n%s", m.DeployOutput)
+		}
+		return
+	}
+	assertErrNil(t, m.Cleanup())
+}
+
 // TestHelp verified the most simple invocation of mgmt does not fail.
 // If this test fails assumptions made by the rest of the testsuite are invalid.
 func TestHelp(t *testing.T) {
@@ -48,13 +67,13 @@ func TestHelp(t *testing.T) {
 func TestSmoketest(t *testing.T) {
 	// create an mgmt test environment and ensure cleanup/debug logging on failure/exit
 	m := Instance{}
-	defer m.Cleanup(t)
+	defer cleanup(t, m)
 
 	// run mgmt to convergence
-	m.Run(t)
+	assertErrNil(t, m.Run())
 
 	// verify output contains what is expected from a converging and finished run
-	m.Finished(t, true)
+	assertErrNil(t, m.Finished( true))
 }
 
 // TestSimple applies a simple mcl file and tests the result.
@@ -62,16 +81,16 @@ func TestSmoketest(t *testing.T) {
 func TestSimple(t *testing.T) {
 	// create an mgmt test environment and ensure cleanup/debug logging on failure/exit
 	m := Instance{}
-	defer m.Cleanup(t)
+	defer cleanup(t, m)
 
 	// apply the configration from lang/simple.mcl
-	m.RunLangFile(t, "lang/simple.mcl")
+	assertErrNil(t, m.RunLangFile(t, "lang/simple.mcl"))
 
 	// verify output contains what is expected from a converging and finished run
-	m.Finished(t, true)
+	assertErrNil(t, m.Finished(t, true))
 
 	// verify if a non-empty `pass` file is created in the working directory
-	m.Pass(t)
+	assertErrNil(t, m.Pass())
 }
 
 // TestDeploy checks if background running and deployment works.
